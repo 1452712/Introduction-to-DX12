@@ -414,21 +414,21 @@ bool D3DApp::InitMainWindow()
 
 bool D3DApp::InitDirect3D()
 {
-#if defined(DEBUG) || defined(_DEBUG) 
-	// Enable the D3D12 debug layer.
-{
-	ComPtr<ID3D12Debug> debugController;
-	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
-	debugController->EnableDebugLayer();
-}
-#endif
+//#if defined(DEBUG) || defined(_DEBUG) 
+//	// Enable the D3D12 debug layer.
+//{
+//	ComPtr<ID3D12Debug> debugController;
+//	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+//	debugController->EnableDebugLayer();
+//}
+//#endif
 
 	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mdxgiFactory)));
 
 	// Try to create hardware device.
 	HRESULT hardwareResult = D3D12CreateDevice(
 		nullptr,             // default adapter
-		D3D_FEATURE_LEVEL_12_0,
+		D3D_FEATURE_LEVEL_11_0,
 		IID_PPV_ARGS(&md3dDevice));
 
 	// Fallback to WARP device.
@@ -438,9 +438,26 @@ bool D3DApp::InitDirect3D()
 		ThrowIfFailed(mdxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
 
 		ThrowIfFailed(D3D12CreateDevice(
+				pWarpAdapter.Get(),
+				D3D_FEATURE_LEVEL_11_0,
+				IID_PPV_ARGS(&md3dDevice)
+		));
+
+		/*HRESULT warpResult = D3D12CreateDevice(
 			pWarpAdapter.Get(),
-			D3D_FEATURE_LEVEL_12_0,
-			IID_PPV_ARGS(&md3dDevice)));
+			D3D_FEATURE_LEVEL_11_0,
+			IID_PPV_ARGS(&md3dDevice));
+		
+		if (FAILED(warpResult))
+		{
+			ComPtr<IDXGIAdapter1> hardwareAdapter;
+			GetHardwareAdapter(mdxgiFactory.Get(), &hardwareAdapter);
+			ThrowIfFailed(D3D12CreateDevice(
+				hardwareAdapter.Get(),
+				D3D_FEATURE_LEVEL_11_0,
+				IID_PPV_ARGS(&md3dDevice)
+			));
+		}*/
 	}
 
 	ThrowIfFailed(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
@@ -678,4 +695,24 @@ void D3DApp::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
 
         ::OutputDebugString(text.c_str());
     }
+}
+
+void D3DApp::GetHardwareAdapter(IDXGIFactory4* mdxgiFactory, IDXGIAdapter1** ppAdapter)
+{
+	*ppAdapter = nullptr;
+	for (UINT adapterIndex = 0; ; ++adapterIndex)
+	{
+		IDXGIAdapter1* pAdapter = nullptr;
+		if (DXGI_ERROR_NOT_FOUND == mdxgiFactory->EnumAdapters1(adapterIndex, &pAdapter))
+		{
+			break;
+		}
+
+		if (SUCCEEDED(D3D12CreateDevice(pAdapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+		{
+			*ppAdapter = pAdapter;
+			return;
+		}
+		pAdapter->Release();
+	}
 }

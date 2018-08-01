@@ -72,6 +72,8 @@ protected:
     void LogAdapterOutputs(IDXGIAdapter* adapter);
     void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
 
+	void GetHardwareAdapter(IDXGIFactory4* mdxgiFactory, IDXGIAdapter1** ppAdapter);
+
 protected:
 
     static D3DApp* mApp;
