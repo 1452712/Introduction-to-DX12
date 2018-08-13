@@ -33,13 +33,15 @@ D3DApp::D3DApp(HINSTANCE hInstance)
 
 D3DApp::~D3DApp()
 {
+    // Wait til GPU processing done
+    // Release COM interfaces
 	if(md3dDevice != nullptr)
 		FlushCommandQueue();
 }
 
 HINSTANCE D3DApp::AppInst()const
 {
-	return mhAppInst;
+	return mhAppInst; // A copy of the applicatoin instance handle
 }
 
 HWND D3DApp::MainWnd()const
@@ -120,6 +122,9 @@ bool D3DApp::Initialize()
  
 void D3DApp::CreateRtvAndDsvDescriptorHeaps()
 {
+    // Key difference: Type.
+    // Actually, mRtbHeap and mDsvHeap are bot ComPtr<ID3D12DescriptorHeap>.
+    // So from some aspect, rtv or dsv are manually divided descriptors.
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
     rtvHeapDesc.NumDescriptors = SwapChainBufferCount;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
@@ -163,6 +168,7 @@ void D3DApp::OnResize()
 
 	mCurrBackBuffer = 0;
  
+    // Create the render target view.
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
 	for (UINT i = 0; i < SwapChainBufferCount; i++)
 	{
@@ -196,7 +202,7 @@ void D3DApp::OnResize()
     optClear.Format = mDepthStencilFormat;
     optClear.DepthStencil.Depth = 1.0f;
     optClear.DepthStencil.Stencil = 0;
-    ThrowIfFailed(md3dDevice->CreateCommittedResource(
+    ThrowIfFailed(md3dDevice->CreateCommittedResource( // Create and commits a resource to a particular heap.
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
         &depthStencilDesc,
@@ -372,6 +378,7 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
+// Initialize the main app window
 bool D3DApp::InitMainWindow()
 {
 	WNDCLASS wc;
@@ -460,9 +467,11 @@ bool D3DApp::InitDirect3D()
 		}*/
 	}
 
+	// Create fence for CPU/GPU synchronization
 	ThrowIfFailed(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 		IID_PPV_ARGS(&mFence)));
 
+	// Get Descriptor sizes for various descriptor types
 	mRtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	mDsvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	mCbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -482,7 +491,7 @@ bool D3DApp::InitDirect3D()
 		sizeof(msQualityLevels)));
 
     m4xMsaaQuality = msQualityLevels.NumQualityLevels;
-	assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
+	assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level."); // check quality support
 	
 #ifdef _DEBUG
     LogAdapters();
@@ -577,17 +586,18 @@ ID3D12Resource* D3DApp::CurrentBackBuffer()const
 	return mSwapChainBuffer[mCurrBackBuffer].Get();
 }
 
+// To keep track of the current back buffer index.
 D3D12_CPU_DESCRIPTOR_HANDLE D3DApp::CurrentBackBufferView()const
 {
 	return CD3DX12_CPU_DESCRIPTOR_HANDLE(
 		mRtvHeap->GetCPUDescriptorHandleForHeapStart(),
 		mCurrBackBuffer,
-		mRtvDescriptorSize);
+		mRtvDescriptorSize); // Return RTV to the current back buffer
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3DApp::DepthStencilView()const
 {
-	return mDsvHeap->GetCPUDescriptorHandleForHeapStart();
+	return mDsvHeap->GetCPUDescriptorHandleForHeapStart(); // Return DSV to the main depth/stencil buffer
 }
 
 void D3DApp::CalculateFrameStats()
@@ -599,7 +609,7 @@ void D3DApp::CalculateFrameStats()
 	static int frameCnt = 0;
 	static float timeElapsed = 0.0f;
 
-	frameCnt++;
+	frameCnt++; // Do add and fps calculation in one function. So it will be called every frame.
 
 	// Compute averages over one second period.
 	if( (mTimer.TotalTime() - timeElapsed) >= 1.0f )
@@ -608,7 +618,7 @@ void D3DApp::CalculateFrameStats()
 		float mspf = 1000.0f / fps;
 
         wstring fpsStr = to_wstring(fps);
-        wstring mspfStr = to_wstring(mspf);
+        wstring mspfStr = to_wstring(mspf); // milliseconds per frame
 
         wstring windowText = mMainWndCaption +
             L"    fps: " + fpsStr +

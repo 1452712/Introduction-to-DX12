@@ -114,6 +114,7 @@ BoxApp::~BoxApp()
 
 bool BoxApp::Initialize()
 {
+    // InitMainWindow & InitDirect3D
     if(!D3DApp::Initialize())
 		return false;
 		

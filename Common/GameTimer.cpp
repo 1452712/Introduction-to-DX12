@@ -58,7 +58,7 @@ void GameTimer::Reset()
 	__int64 currTime;
 	QueryPerformanceCounter((LARGE_INTEGER*)&currTime);
 
-	mBaseTime = currTime;
+	mBaseTime = currTime; // Initialize to the current time.
 	mPrevTime = currTime;
 	mStopTime = 0;
 	mStopped  = false;
@@ -78,6 +78,7 @@ void GameTimer::Start()
 
 	if( mStopped )
 	{
+        // Calculate the total paused time
 		mPausedTime += (startTime - mStopTime);	
 
 		mPrevTime = startTime;
@@ -98,6 +99,7 @@ void GameTimer::Stop()
 	}
 }
 
+// Compute delta t.
 void GameTimer::Tick()
 {
 	if( mStopped )
