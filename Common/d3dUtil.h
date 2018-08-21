@@ -128,6 +128,7 @@ public:
 		const std::string& target);
 };
 
+// Store error code, function name, filename and lie number of the offending call.
 class DxException
 {
 public:
@@ -274,6 +275,7 @@ struct Texture
 	Microsoft::WRL::ComPtr<ID3D12Resource> UploadHeap = nullptr;
 };
 
+// L#x turn it into Unicode
 #ifndef ThrowIfFailed
 #define ThrowIfFailed(x)                                              \
 {                                                                     \
