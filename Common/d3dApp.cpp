@@ -471,6 +471,13 @@ bool D3DApp::InitDirect3D()
 	ThrowIfFailed(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 		IID_PPV_ARGS(&mFence)));
 
+    //D3D12_FEATURE_DATA_D3D12_OPTIONS opt;
+    //opt.ResourceHeapTier = D3D12_RESOURCE_HEAP_TIER_2;
+    //ThrowIfFailed(md3dDevice->CheckFeatureSupport(
+    //    D3D12_FEATURE_D3D12_OPTIONS,
+    //    &opt,
+    //    sizeof(opt)));
+
 	// Get Descriptor sizes for various descriptor types
 	mRtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	mDsvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
